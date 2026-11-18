@@ -62,7 +62,7 @@
 </div>
 
 <script>
-async function enviarMensaje() {
+    async function enviarMensaje() {
         const input = document.getElementById("userInput");
         const btn = document.getElementById("sendBtn");
         const chatBox = document.getElementById("chatBox");
@@ -70,35 +70,59 @@ async function enviarMensaje() {
 
         if (!texto) return;
 
+        // Mostrar tu mensaje
         chatBox.innerHTML += `<div class="message user-msg">${texto}</div>`;
         input.value = "";
         input.disabled = true;
         btn.disabled = true;
         chatBox.scrollTop = chatBox.scrollHeight;
 
+        // Mostrar cargando
         const loadingId = "loading-" + Date.now();
-        chatBox.innerHTML += `<div class="message ai-msg loading" id="${loadingId}">Sonia está procesando...</div>`;
+        chatBox.innerHTML += `<div class="message ai-msg loading" id="${loadingId}">Sonia está analizando tu pregunta...</div>`;
         chatBox.scrollTop = chatBox.scrollHeight;
 
-        // Simulación inteligente para salvar la entrega al instante
-        setTimeout(() => {
-            let respuestaIA = "Como asistente Sonia diseñada por Agustín, entiendo tu duda sobre " + texto + ". Recuerda repasar tus apuntes de preparatoria y analizar los conceptos clave paso a paso con responsabilidad y empatía.";
+        try {
+            // Personalidad y reglas de Sonia
+            const promptSistema = "Eres Sonia (S.O.N.I.A.), una inteligencia artificial académica diseñada por Agustín. Respondes de forma clara, inteligente, completa y natural (como ChatGPT o Gemini) a cualquier pregunta escolar o general. Usa formato claro.";
             
-            if(texto.toLowerCase().includes("hola")) {
-                respuestaIA = "¡Hola! Soy Sonia, tu asistente escolar. ¿En qué materia o tarea te puedo orientar hoy?";
-            } else if(texto.toLowerCase().includes("fisica") || texto.toLowerCase().includes("matematicas")) {
-                respuestaIA = "Ese es un excelente tema para preparatoria. Analicemos los datos del problema: identifica primero las variables y aplica la fórmula correspondiente.";
-            }
+            // Conexión directa a IA real sin necesidad de API Key
+            const response = await fetch("https://text.pollinations.ai/", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    messages: [
+                        { role: "system", content: promptSistema },
+                        { role: "user", content: texto }
+                    ],
+                    model: "openai"
+                })
+            });
+
+            if (!response.ok) throw new Error("Error en el servidor");
+
+            const respuestaReal = await response.text();
+            
+            // Formatear negritas (**texto**) y saltos de línea para que se vea pro
+            const respuestaFormateada = respuestaReal
+                .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")
+                .replace(/\n/g, "<br>");
 
             const msgElement = document.getElementById(loadingId);
             msgElement.classList.remove("loading");
-            msgElement.innerHTML = respuestaIA.replace(/\n/g, "<br>");
-            
-            input.disabled = false;
-            btn.disabled = false;
-            input.focus();
-            chatBox.scrollTop = chatBox.scrollHeight;
-        }, 1000);
+            msgElement.innerHTML = respuestaFormateada;
+
+        } catch (error) {
+            const msgElement = document.getElementById(loadingId);
+            msgElement.classList.remove("loading");
+            msgElement.innerText = "Hubo un problema de red al conectar con el servidor de IA. Revisa tu conexión a internet e intenta de nuevo.";
+            console.error(error);
+        }
+
+        input.disabled = false;
+        btn.disabled = false;
+        input.focus();
+        chatBox.scrollTop = chatBox.scrollHeight;
     }
 </script>
 
